@@ -4,29 +4,17 @@ import UserPostHeader from "@/features/posts/components/header"; // Ensure corre
 import LikedByUsers from "@/features/posts/components/liked-by"; // Ensure correct path
 import PostImage from "@/features/posts/components/post-image"; // Ensure correct path
 import ShareDrawer from "@/features/posts/components/share-drawer";
-import PostsTabs from "@/features/posts/components/tabs"; // Ensure correct path
+import PostsTabs from "@/features/posts/components/tabs";
 import InteractionsButtons from "@/features/posts/components/wrapper"; // Ensure correct path
-import Stories from "@/features/stories/components/stories"; // Ensure correct path
+import useQueryPostsFromFollowing from "@/features/posts/hooks/query-posts-from-following";
+import { Post } from "@/features/posts/type";
+import Stories from "@/features/stories/components/stories";
 import React, { memo, useCallback, useState } from "react";
 import { FlatList, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-// Define dummy post type for the example if not already defined
-interface PostItem {
-  id: string;
-  // other post properties
-}
-
 const Home = () => {
   const [isShareDrawerVisible, setIsShareDrawerVisible] = useState(false);
-  // Use useCallback for functions passed to memoized components or event handlers
-  const handleOpenShareDrawer = useCallback(
-    (/*postId: string*/) => {
-      // setSelectedPostIdForShare(postId); // Store post ID if needed for the onSend action
-      setIsShareDrawerVisible(true);
-    },
-    []
-  );
 
   const handleCloseShareDrawer = useCallback(() => {
     setIsShareDrawerVisible(false);
@@ -43,36 +31,41 @@ const Home = () => {
       /*selectedPostIdForShare*/
     ]
   );
+  const { data: rawData, ...query } = useQueryPostsFromFollowing();
+  const data = rawData?.data ?? [];
+
+  if (query.isError) console.log(query.error.message);
 
   const renderPostItem = useCallback(
-    ({ item }: { item: PostItem }) => (
+    ({ item }: { item: Post }) => (
       <Posts
+        key={item.id} // Ensure each post has a unique key
         post={item} // Pass post data if needed by Posts component
-        onSharePress={() => handleOpenShareDrawer(/*item.id*/)}
       />
     ),
-    [handleOpenShareDrawer]
+    []
   );
-
-  // Dummy data for FlatList
-  const DUMMY_POST_DATA: PostItem[] = Array.from({ length: 10 }, (_, i) => ({
-    id: (i + 1).toString(),
-  }));
 
   return (
     // Use edges prop to control SafeAreaView behavior if TabBar is absolutely positioned
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <FlatList
-        data={DUMMY_POST_DATA}
-        keyExtractor={(item) => item.id}
+        data={data ?? []}
+        keyExtractor={(item) => item.id.toString()}
         renderItem={renderPostItem}
+        getItemLayout={(data, index) => ({
+          length: 600, // estimated height of a post
+          offset: 500 * index,
+          index,
+        })}
+        initialNumToRender={5}
         ListHeaderComponent={
-          <View className="h-auto">
+          <View>
             <Stories />
             <PostsTabs />
           </View>
         }
-        className="bg-white flex-1" // bg-white for the list area
+        className="flex-1 bg-white" // bg-white for the list area
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContentContainer} // Adjusted padding for absolute TabBar
       />
@@ -87,22 +80,22 @@ const Home = () => {
 
 // Make sure Posts component accepts onSharePress
 interface PostsProps {
-  post: PostItem; // Example: if Posts needs post data
-  onSharePress: () => void;
+  post: Post; // Example: if Posts needs post data
 }
 
-const Posts = memo(({ post, onSharePress }: PostsProps) => {
+const Posts = memo(({ post }: PostsProps) => {
   return (
     <VStack
       // Consider adding a key here if post.id is available: key={post.id}
-      className="h-auto flex-1 px-4 py-3 bg-white border-b border-gray-100" // Adjusted styling slightly for consistency
+      key={post.id}
+      className="flex-1 px-4 py-3 bg-white border-b border-gray-100" // Adjusted styling slightly for consistency
       space="md"
     >
-      <UserPostHeader />
-      <PostImage />
+      <UserPostHeader post={post} />
+      <PostImage data={post} />
       <LikedByUsers />
-      <InteractionsButtons onSharePress={onSharePress} />
-      <Description />
+      <InteractionsButtons data={post} />
+      <Description data={post} />
     </VStack>
   );
 });

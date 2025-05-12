@@ -1,9 +1,12 @@
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import UIConstants from "@/constants/Values";
+import { getComments } from "@/features/posts/api/comment";
+import { Comment } from "@/features/posts/type";
+import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { router } from "expo-router";
-import { ArrowLeft, BadgeCheck, Heart, Send } from "lucide-react-native";
+import { router, useLocalSearchParams } from "expo-router";
+import { ArrowLeft, Heart, Send } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
   FlatList,
@@ -34,115 +37,6 @@ const COMMENTS = [
     isLiked: true,
     replies: 12,
   },
-  {
-    id: "2",
-    username: "sara_ahmed",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Always inspiring content! Keep it up ✨",
-    timeAgo: "4h",
-    likes: 221,
-    isLiked: false,
-    replies: 3,
-  },
-  {
-    id: "3",
-    username: "kawa_mustafa",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Can you share some tips on how you achieved this result?",
-    timeAgo: "8h",
-    likes: 98,
-    isLiked: false,
-    replies: 5,
-  },
-  {
-    id: "4",
-    username: "layla_ibrahim",
-    isVerified: true,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment:
-      "This reminds me of our project last summer! Miss working with you.",
-    timeAgo: "10h",
-    likes: 176,
-    isLiked: false,
-    replies: 2,
-  },
-  {
-    id: "5",
-    username: "omar_khalid",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Absolutely brilliant work! The details are incredible.",
-    timeAgo: "12h",
-    likes: 304,
-    isLiked: true,
-    replies: 8,
-  },
-  {
-    id: "6",
-    username: "zara_mohammed",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Been following your work for a while, this is your best yet!",
-    timeAgo: "1d",
-    likes: 167,
-    isLiked: false,
-    replies: 1,
-  },
-  {
-    id: "7",
-    username: "dilshad_khalil",
-    isVerified: true,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Thanks everyone for the support! More coming soon! ❤️",
-    timeAgo: "1d",
-    likes: 895,
-    isLiked: false,
-    replies: 47,
-  },
-  {
-    id: "8",
-    username: "mariam_ali",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "This is exactly what I needed to see today! So inspiring.",
-    timeAgo: "2d",
-    likes: 78,
-    isLiked: false,
-    replies: 0,
-  },
-  {
-    id: "9",
-    username: "ahmad_kareem",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "Honestly, you've outdone yourself this time. Incredible work!",
-    timeAgo: "2d",
-    likes: 115,
-    isLiked: true,
-    replies: 1,
-  },
-  {
-    id: "10",
-    username: "sarah_najm",
-    isVerified: false,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment: "I've been trying to do something similar. Any tips?",
-    timeAgo: "3d",
-    likes: 43,
-    isLiked: false,
-    replies: 2,
-  },
 ];
 
 // Header Component
@@ -165,22 +59,9 @@ const CommentsHeader = () => {
   );
 };
 
-// Comment Item Component
-interface Comment {
-  id: string;
-  username: string;
-  isVerified: boolean;
-  avatar: string;
-  comment: string;
-  timeAgo: string;
-  likes: number;
-  isLiked: boolean;
-  replies: number;
-}
-
-const CommentItem = ({ comment }: { comment: Comment }) => {
-  const [liked, setLiked] = useState(comment.isLiked);
-  const [likesCount, setLikesCount] = useState(comment.likes);
+const CommentItem = ({ data }: { data: Comment }) => {
+  const [liked, setLiked] = useState(false);
+  const [likesCount, setLikesCount] = useState(0);
 
   const handleLike = () => {
     if (liked) {
@@ -192,13 +73,17 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
   };
 
   return (
-    <HStack className="py-3 px-4" space="md">
+    <HStack className="px-4 py-3" space="md">
       <TouchableOpacity
         activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
         onPress={() => router.push("/user-profile/profile")}
       >
         <Image
-          source={{ uri: comment.avatar }}
+          source={{
+            uri:
+              data.profile_picture ??
+              "https://images.unsplash.com/photo-1606041008023-472dfb5e530f?q=80&w=1888&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D",
+          }}
           alt="Avatar"
           contentFit="cover"
           style={styles.avatar}
@@ -209,28 +94,28 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
         <HStack className="items-start justify-between">
           <VStack space="xs" className="flex-1">
             <HStack className="items-center" space="xs">
-              <Text className="font-SF_Bold text-base">{comment.username}</Text>
-              {comment.isVerified && <BadgeCheck size={14} color="blue" />}
-              <Text className="text-gray-500 text-xs font-SF_Regular">
-                • {comment.timeAgo}
-              </Text>
+              <Text className="text-base font-SF_Bold">{data.username}</Text>
+              {/* {true && <BadgeCheck size={14} color="blue" />} */}
+              {/* <Text className="text-xs text-gray-500 font-SF_Regular">
+                • {}
+              </Text> */}
             </HStack>
 
-            <Text className="text-base font-SF_Regular">{comment.comment}</Text>
+            <Text className="text-base font-SF_Regular">{data.content}</Text>
 
             <HStack className="items-center" space="lg">
-              <Text className="text-gray-500 text-xs font-SF_Medium">
+              {/* <Text className="text-xs text-gray-500 font-SF_Medium">
                 {comment.replies > 0
                   ? `View ${comment.replies} ${
                       comment.replies === 1 ? "reply" : "replies"
                     }`
                   : ""}
-              </Text>
+              </Text> */}
               <TouchableOpacity
                 activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
                 onPress={() => {}}
               >
-                <Text className="text-gray-500 text-xs font-SF_Medium">
+                <Text className="text-xs text-gray-500 font-SF_Medium">
                   Reply
                 </Text>
               </TouchableOpacity>
@@ -248,7 +133,7 @@ const CommentItem = ({ comment }: { comment: Comment }) => {
               fill={liked ? "#ED4956" : "transparent"}
             />
             {likesCount > 0 && (
-              <Text className="text-xs font-SF_Medium text-gray-500 mt-1">
+              <Text className="mt-1 text-xs text-gray-500 font-SF_Medium">
                 {likesCount}
               </Text>
             )}
@@ -303,7 +188,7 @@ const CommentInput = () => {
             Keyboard.dismiss();
           }}
         >
-          <Text className="text-blue-500 font-SF_Bold text-base">Post</Text>
+          <Text className="text-base text-blue-500 font-SF_Bold">Post</Text>
         </TouchableOpacity>
       </HStack>
     </View>
@@ -312,7 +197,16 @@ const CommentInput = () => {
 
 // Main Comments Screen
 const CommentsScreen = () => {
-  const insets = useSafeAreaInsets();
+  const { id }: { id: string } = useLocalSearchParams();
+
+  console.log("l", id);
+
+  const commentsQuery = useQuery({
+    queryKey: ["comments", id],
+    queryFn: () => getComments(id),
+  });
+
+  const data = commentsQuery.data?.data ?? [];
 
   return (
     <SafeAreaView
@@ -322,9 +216,9 @@ const CommentsScreen = () => {
       <CommentsHeader />
 
       <FlatList
-        data={COMMENTS}
+        data={data}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <CommentItem comment={item} />}
+        renderItem={({ item }) => <CommentItem data={item} />}
         ItemSeparatorComponent={() => <View style={styles.separator} />}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingTop: 10, paddingBottom: 100 }}

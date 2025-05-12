@@ -1,18 +1,18 @@
 import { HStack } from "@/components/ui/hstack";
+import { Post } from "../type";
 import Comments from "./comments";
 import LikeButton from "./like-button";
-import PostShares from "./post-shares"; // Ensure this path is correct
 
 interface InteractionsButtonsProps {
-  onSharePress: () => void;
+  data: Post;
 }
 
-const InteractionsButtons = ({ onSharePress }: InteractionsButtonsProps) => {
+const InteractionsButtons = ({ data }: InteractionsButtonsProps) => {
   return (
     <HStack space="sm">
-      <LikeButton />
-      <Comments />
-      <PostShares onPress={onSharePress} />
+      <LikeButton data={data} />
+      <Comments data={data} />
+      {/* <PostShares onPress={onSharePress} /> */}
     </HStack>
   );
 };

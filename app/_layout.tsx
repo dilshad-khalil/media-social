@@ -42,7 +42,7 @@ const Layout = () => {
             }}
           />
           <Stack.Screen
-            name="user-comments/comments"
+            name="user-comments/[id]"
             options={{
               headerShown: false,
               presentation: "modal",

@@ -1,13 +1,9 @@
 import React from "react";
 import { Text } from "react-native";
+import { Post } from "../type";
 
-const Description = () => {
-  return (
-    <Text className="text-lg font-SF_Medium">
-      Thanks for everyone that helped us during our engineering journey.
-      Appreciate that. 🥰❤️
-    </Text>
-  );
+const Description = ({ data }: { data: Post }) => {
+  return <Text className="text-lg font-SF_Medium">{data.content}</Text>;
 };
 
 export default Description;

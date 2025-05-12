@@ -6,34 +6,37 @@ import { router } from "expo-router";
 import { BadgeCheck } from "lucide-react-native";
 import React from "react";
 import { Text, TouchableOpacity } from "react-native";
+import { Post } from "../type";
 
-const UserPostHeader = () => {
+const UserPostHeader = ({ post }: { post: Post }) => {
   return (
     <TouchableOpacity
       activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
       onPress={() => router.push("/user-profile/profile")}
     >
-      <HStack className=" items-center" space="md">
-        <Image
-          source={{
-            uri: "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-          }}
-          alt="PostImage"
-          contentFit="cover"
-          style={{
-            width: 42,
-            height: 42,
-            borderRadius: 200,
-          }}
-        />
+      <HStack className="items-center " space="md">
+        {post.profile_picture && (
+          <Image
+            source={{
+              uri: post.profile_picture,
+            }}
+            alt="PostImage"
+            contentFit="cover"
+            style={{
+              width: 42,
+              height: 42,
+              borderRadius: 200,
+            }}
+          />
+        )}
         <VStack>
-          <HStack className=" items-center" space="sm">
-            <Text className="text-xl font-SF_Bold text-black">
-              Erika Holmes
+          <HStack className="items-center " space="sm">
+            <Text className="text-xl text-black font-SF_Bold">
+              {post.display_name}
             </Text>
             <BadgeCheck size={18} color={"blue"} />
           </HStack>
-          <Text>Erbil</Text>
+          <Text>{post.username}</Text>
         </VStack>
       </HStack>
     </TouchableOpacity>

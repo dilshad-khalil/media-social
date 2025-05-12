@@ -1,0 +1,25 @@
+const names = [
+  "Emma",
+  "Olivia",
+  "Ava",
+  "Sophia",
+  "Isabella",
+  "Mia",
+  "Charlotte",
+  "Amelia",
+  "Harper",
+  "Evelyn",
+  "Abigail",
+  "Ella",
+  "Liam",
+  "Noah",
+  "Oliver",
+  "Elijah",
+  "James",
+  "William",
+  "Benjamin",
+  "Lucas",
+  "Henry",
+];
+
+export default names;

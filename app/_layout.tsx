@@ -1,29 +1,57 @@
-import { DarkTheme, DefaultTheme, ThemeProvider } from '@react-navigation/native';
-import { useFonts } from 'expo-font';
-import { Stack } from 'expo-router';
-import { StatusBar } from 'expo-status-bar';
-import 'react-native-reanimated';
+import useLoadFonts from "@/hooks/useLoadFonts";
+import { Stack } from "expo-router";
+import { StatusBar } from "expo-status-bar";
+import React, { useEffect, useState } from "react";
+import "../global.css";
 
-import { useColorScheme } from '@/hooks/useColorScheme';
+const Layout = () => {
+  const [fontsLoaded, error] = useLoadFonts();
+  const [headerVisible, setHeaderVisible] = useState(true);
 
-export default function RootLayout() {
-  const colorScheme = useColorScheme();
-  const [loaded] = useFonts({
-    SpaceMono: require('../assets/fonts/SpaceMono-Regular.ttf'),
-  });
-
-  if (!loaded) {
-    // Async font loading only occurs in development.
-    return null;
-  }
+  useEffect(() => {
+    if (error) console.error("Error loading fonts:", error);
+    if (fontsLoaded) {
+      console.log("Fonts loaded successfully");
+    }
+  }, [error, fontsLoaded]);
 
   return (
-    <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
+    <>
       <Stack>
         <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
-        <Stack.Screen name="+not-found" />
+        <Stack.Screen name="login" options={{ headerShown: false }} />
+        <Stack.Screen name="register" options={{ headerShown: false }} />
+        <Stack.Screen
+          name="stories/user-story"
+          options={{
+            headerShown: false,
+            presentation: "containedModal",
+            animation: "slide_from_bottom",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="user-profile/profile"
+          options={{
+            headerShown: false,
+            animation: "slide_from_right",
+            gestureEnabled: true,
+          }}
+        />
+        <Stack.Screen
+          name="user-comments/comments"
+          options={{
+            headerShown: false,
+            presentation: "modal",
+            animation: "slide_from_bottom",
+            gestureEnabled: true,
+          }}
+        />
       </Stack>
-      <StatusBar style="auto" />
-    </ThemeProvider>
+
+      <StatusBar style="dark" />
+    </>
   );
-}
+};
+
+export default Layout;

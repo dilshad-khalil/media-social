@@ -1,12 +1,12 @@
 import React from "react";
 import { Text, View } from "react-native";
 
-const NotFound = () => {
+const PostDate = () => {
   return (
     <View>
-      <Text>NotFound</Text>
+      <Text>PostDate</Text>
     </View>
   );
 };
 
-export default NotFound;
+export default PostDate;

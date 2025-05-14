@@ -4,7 +4,6 @@ import { getAccessToken } from "./utils/access-token";
 
 const AxiosInstance = axios.create({
   baseURL: ENV.apiUrl,
-  timeout: 3000,
 });
 
 AxiosInstance.interceptors.request.use(

@@ -1,16 +1,16 @@
+import { getProfile } from "@/api/profile";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import UIConstants from "@/constants/Values";
-import { getComments } from "@/features/posts/api/comment";
+import { getComments, postComment } from "@/features/posts/api/comment";
 import { Comment } from "@/features/posts/type";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { router, useLocalSearchParams } from "expo-router";
 import { ArrowLeft, Heart, Send } from "lucide-react-native";
 import React, { useRef, useState } from "react";
 import {
   FlatList,
-  Keyboard,
   StyleSheet,
   Text,
   TextInput,
@@ -21,23 +21,6 @@ import {
   SafeAreaView,
   useSafeAreaInsets,
 } from "react-native-safe-area-context";
-
-// Fake comment data
-const COMMENTS = [
-  {
-    id: "1",
-    username: "ahmed_hassan",
-    isVerified: true,
-    avatar:
-      "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
-    comment:
-      "This is amazing! 🔥 Really love the work you've been putting out lately.",
-    timeAgo: "2h",
-    likes: 453,
-    isLiked: true,
-    replies: 12,
-  },
-];
 
 // Header Component
 const CommentsHeader = () => {
@@ -149,6 +132,29 @@ const CommentInput = () => {
   const [comment, setComment] = useState("");
   const inputRef = useRef(null);
   const insets = useSafeAreaInsets();
+  const { id: postId }: { id: string } = useLocalSearchParams();
+
+  const query = useQueryClient();
+
+  const queryProfile = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
+
+  const profilePicture = queryProfile?.data?.data?.profile_picture;
+
+  const mutation = useMutation({
+    mutationFn: () => postComment(postId, comment),
+    onSuccess: () => {
+      setComment("");
+      query.invalidateQueries({
+        queryKey: ["comments", postId],
+      });
+    },
+    onError: (e) => {
+      console.log("error entering comment", e.message);
+    },
+  });
 
   return (
     <View
@@ -160,7 +166,7 @@ const CommentInput = () => {
       <HStack className="items-center px-4 py-2" space="md">
         <Image
           source={{
-            uri: "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
+            uri: profilePicture,
           }}
           alt="Avatar"
           contentFit="cover"
@@ -180,13 +186,9 @@ const CommentInput = () => {
 
         <TouchableOpacity
           activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-          disabled={!comment.trim()}
+          disabled={mutation.isPending}
           style={{ opacity: comment.trim() ? 1 : 0.5 }}
-          onPress={() => {
-            // Handle posting comment
-            setComment("");
-            Keyboard.dismiss();
-          }}
+          onPress={() => mutation.mutate()}
         >
           <Text className="text-base text-blue-500 font-SF_Bold">Post</Text>
         </TouchableOpacity>
@@ -198,8 +200,6 @@ const CommentInput = () => {
 // Main Comments Screen
 const CommentsScreen = () => {
   const { id }: { id: string } = useLocalSearchParams();
-
-  console.log("l", id);
 
   const commentsQuery = useQuery({
     queryKey: ["comments", id],

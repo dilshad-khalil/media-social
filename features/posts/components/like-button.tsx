@@ -23,7 +23,6 @@ const LikeButton = ({ data }: { data: Post }) => {
   const likeMutation = useMutation({
     mutationFn: () => LikePost(data.id),
     onSuccess: () => {
-      console.log("LIKED");
       setLiked(true);
     },
     onError: (error) => {
@@ -34,12 +33,9 @@ const LikeButton = ({ data }: { data: Post }) => {
   const unlikeMutation = useMutation({
     mutationFn: () => UnlikePost(data.id),
     onSuccess: () => {
-      console.log("UNLIKED");
       setLiked(false);
     },
   });
-
-  console.log({ liked, likes });
 
   return (
     <TouchableOpacity

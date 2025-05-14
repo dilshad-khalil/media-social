@@ -1,8 +1,10 @@
+import { getProfile } from "@/api/profile";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import UIConstants from "@/constants/Values";
 import { useNavigation } from "@react-navigation/native";
+import { useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
 import { ArrowLeft, BadgeCheck, ChevronDown } from "lucide-react-native";
 import React, { useCallback } from "react";
@@ -35,11 +37,11 @@ const PageHeader = ({ title }: { title: string }) => {
         <TouchableOpacity
           onPress={handleGoBack}
           activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-          className="p-2 rounded-full border border-gray-200"
+          className="p-2 border border-gray-200 rounded-full"
         >
           <ArrowLeft size={20} color="black" />
         </TouchableOpacity>
-        <Text className="text-xl font-SF_Bold text-black">{title}</Text>
+        <Text className="text-xl text-black font-SF_Bold">{title}</Text>
       </HStack>
     </View>
   );
@@ -47,11 +49,18 @@ const PageHeader = ({ title }: { title: string }) => {
 
 // Profile Header Component
 const ProfileHeader = () => {
+  const queryProfile = useQuery({
+    queryKey: ["profile"],
+    queryFn: getProfile,
+  });
+
+  const data = queryProfile?.data?.data;
+
   return (
-    <Box className="w-full h-auto bg-white rounded-lg p-3 mb-4">
+    <Box className="w-full h-auto p-3 mb-4 bg-white rounded-lg">
       <VStack space="md">
-        <HStack className="w-full items-center">
-          <Box className="h-auto w-auto border-2 border-blue-500 p-1 rounded-full">
+        <HStack className="items-center w-full">
+          <Box className="w-auto h-auto p-1 border-2 border-blue-500 rounded-full">
             <Image
               style={{
                 width: 72,
@@ -60,23 +69,26 @@ const ProfileHeader = () => {
               }}
               contentFit="cover"
               source={{
-                uri: "https://t3.ftcdn.net/jpg/02/75/47/42/360_F_275474265_nkDhz0m7eJ5Ux6OErd1DanxyPPoYv5CZ.jpg",
+                uri: data?.profile_picture,
               }}
             />
           </Box>
-          <HStack className="flex-1 px-10 justify-between">
+          <HStack className="justify-between flex-1 px-10">
             <ProfileStat count="120" label="posts" />
             <ProfileStat count="2.1M" label="followers" />
             <ProfileStat count="122" label="following" />
           </HStack>
         </HStack>
 
-        <HStack space="sm" className="items-center">
-          <Text className="text-xl font-SF_Bold">Dilshad Khalil</Text>
-          <BadgeCheck color={"blue"} size={18} />
-        </HStack>
+        <VStack>
+          <HStack space="sm" className="items-center">
+            <Text className="text-xl font-SF_Bold">{data?.display_name}</Text>
+            <BadgeCheck color={"blue"} size={18} />
+          </HStack>
+          <Text className="text-lg font-SF_Semibold">@{data?.username}</Text>
+        </VStack>
 
-        <ProfileBio />
+        <ProfileBio text={data?.bio ?? ""} />
         <ProfileActions />
       </VStack>
     </Box>
@@ -86,36 +98,33 @@ const ProfileHeader = () => {
 const ProfileStat = ({ count, label }: { count: string; label: string }) => {
   return (
     <VStack className="items-center">
-      <Text className="text-black font-SF_Bold text-xl">{count}</Text>
+      <Text className="text-xl text-black font-SF_Bold">{count}</Text>
       <Text className="text-gray-500 font-SF_Medium">{label}</Text>
     </VStack>
   );
 };
 
-const ProfileBio = () => {
+const ProfileBio = ({ text }: { text: string }) => {
   return (
     <HStack className="flex-col">
-      <Text className="font-SF_Medium text-lg text-gray-600">🎸 Musician</Text>
-      <Text className="font-SF_Medium text-lg text-gray-600">
-        🎹 &quot;Too Much Of A Good Thing&quot; OUT NOW
-      </Text>
+      <Text className="text-lg text-gray-600 font-SF_Medium">{text}</Text>
     </HStack>
   );
 };
 
 const ProfileActions = () => {
   return (
-    <HStack space="sm" className="w-full justify-between items-center">
+    <HStack space="sm" className="items-center justify-between w-full">
       <TouchableOpacity
         activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-        className="border border-gray-100 rounded-full items-center gap-2 flex-1 flex-row p-3 justify-center"
+        className="flex-row items-center justify-center flex-1 gap-2 p-3 border border-gray-100 rounded-full"
       >
         <Text className="text-lg font-SF_Medium">Following</Text>
         <ChevronDown size={16} color={"black"} />
       </TouchableOpacity>
       <TouchableOpacity
         activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-        className="border border-gray-100 rounded-full items-center flex-1 gap-2 flex-row p-3 justify-center"
+        className="flex-row items-center justify-center flex-1 gap-2 p-3 border border-gray-100 rounded-full"
       >
         <Text className="text-lg font-SF_Medium">Message</Text>
       </TouchableOpacity>

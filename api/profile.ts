@@ -19,10 +19,14 @@ type Response = {
     date_of_birth: string;
     followersCount: number;
     followingCount: number;
+    postsCount: number;
+    isFollowing: boolean;
   };
 };
 
-export async function getProfile() {
-  const response = await AxiosInstance.get<Response>("/user/profile");
+export async function getProfile(userId?: string) {
+  const response = await AxiosInstance.get<Response>(
+    `/user/profile${userId ? `/${userId}` : ""}`
+  );
   return response.data;
 }

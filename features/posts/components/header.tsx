@@ -12,7 +12,7 @@ const UserPostHeader = ({ post }: { post: Post }) => {
   return (
     <TouchableOpacity
       activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-      onPress={() => router.push("/user-profile/profile")}
+      onPress={() => router.push(`/user-profile/${post.author_id}`)}
     >
       <HStack className="items-center " space="md">
         {post.profile_picture && (

@@ -1,3 +1,4 @@
+import { getPostByAuthor } from "@/api/posts";
 import { getProfile } from "@/api/profile";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
@@ -12,8 +13,9 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 // Profile Header Component
 const ProfileHeader = () => {
   const queryProfile = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
+    queryKey: ["profile", "mine"],
+    queryFn: () => getProfile(),
+    enabled: true,
   });
 
   const data = queryProfile?.data?.data;
@@ -36,9 +38,18 @@ const ProfileHeader = () => {
             />
           </Box>
           <HStack className="justify-between flex-1 px-10">
-            <ProfileStat count="120" label="posts" />
-            <ProfileStat count="2.1M" label="followers" />
-            <ProfileStat count="122" label="following" />
+            <ProfileStat
+              count={data?.postsCount.toString() || ""}
+              label="posts"
+            />
+            <ProfileStat
+              count={data?.followersCount.toString() || ""}
+              label="followers"
+            />
+            <ProfileStat
+              count={data?.followingCount.toString() || ""}
+              label="following"
+            />
           </HStack>
         </HStack>
 
@@ -73,19 +84,9 @@ const ProfileBio = ({ text }: { text: string }) => {
   );
 };
 
-const PostRow = ({ images }: { images: string[] }) => {
-  return (
-    <HStack space="sm" className="mb-2">
-      {images.map((image, index) => (
-        <PostImage key={index} uri={image} />
-      ))}
-    </HStack>
-  );
-};
-
 const PostImage = ({ uri }: { uri: string }) => {
   return (
-    <Box className="flex-1 bg-black h-[120px] rounded-lg">
+    <Box className="flex-1 bg-black h-[120px] aspect-square mx-1 rounded-lg">
       <Image
         source={{ uri }}
         cachePolicy={"memory-disk"}
@@ -101,33 +102,40 @@ const PostImage = ({ uri }: { uri: string }) => {
   );
 };
 
-const generatePostData = () => {
-  return Array.from({ length: 3 }).map((_, i) => ({
-    id: `row-${i}`,
-    images: [
-      `https://picsum.photos/300/300?random=${i * 3}`,
-      `https://picsum.photos/400/400?random=${i * 4 + 1}`,
-      `https://picsum.photos/500/500?random=${i * 3 + 2}`,
-    ],
-  }));
-};
-
 // Main Component
-const UserProfile = ({ hasHeader = true }: { hasHeader: boolean }) => {
-  const postData = generatePostData();
+const UserProfile = () => {
   const insets = useSafeAreaInsets();
+
+  const queryProfile = useQuery({
+    queryKey: ["profile", "mine"],
+    queryFn: () => getProfile(),
+  });
+
+  const userId =
+    queryProfile?.data?.data.id ?? "47d8c9ce-ead1-4855-b2d5-1f6823138715";
+  const queryPosts = useQuery({
+    queryKey: ["posts", "author", userId],
+    queryFn: () => getPostByAuthor(userId),
+  });
+  const posts = queryPosts.data?.data ?? [];
 
   return (
     <View style={styles.container}>
       <FlatList
-        data={postData}
+        data={posts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostRow images={item.images} />}
+        renderItem={({ item }) => <PostImage uri={item.PostImage || ""} />}
+        numColumns={3}
         ListHeaderComponent={<ProfileHeader />}
+        style={{ marginTop: insets.top }}
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingTop: hasHeader ? 56 + insets.top : insets.top }, // Add header height + top inset
+          { paddingBottom: insets.bottom + 100 },
         ]}
+        columnWrapperStyle={{
+          marginBottom: 8,
+          marginHorizontal: -8,
+        }}
         showsVerticalScrollIndicator={false}
       />
     </View>

@@ -1,12 +1,15 @@
+import { followUser, unfollowUser } from "@/api/follow";
+import { getPostByAuthor } from "@/api/posts";
 import { getProfile } from "@/api/profile";
 import { Box } from "@/components/ui/box";
 import { HStack } from "@/components/ui/hstack";
 import { VStack } from "@/components/ui/vstack";
 import UIConstants from "@/constants/Values";
 import { useNavigation } from "@react-navigation/native";
-import { useQuery } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Image } from "expo-image";
-import { ArrowLeft, BadgeCheck, ChevronDown } from "lucide-react-native";
+import { useLocalSearchParams } from "expo-router";
+import { ArrowLeft, BadgeCheck } from "lucide-react-native";
 import React, { useCallback } from "react";
 import {
   FlatList,
@@ -49,9 +52,11 @@ const PageHeader = ({ title }: { title: string }) => {
 
 // Profile Header Component
 const ProfileHeader = () => {
+  const { id } = useLocalSearchParams();
+
   const queryProfile = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
+    queryKey: ["profile", id],
+    queryFn: () => getProfile(id as string),
   });
 
   const data = queryProfile?.data?.data;
@@ -74,9 +79,18 @@ const ProfileHeader = () => {
             />
           </Box>
           <HStack className="justify-between flex-1 px-10">
-            <ProfileStat count="120" label="posts" />
-            <ProfileStat count="2.1M" label="followers" />
-            <ProfileStat count="122" label="following" />
+            <ProfileStat
+              count={data?.postsCount.toString() || ""}
+              label="posts"
+            />
+            <ProfileStat
+              count={data?.followersCount.toString() || ""}
+              label="followers"
+            />
+            <ProfileStat
+              count={data?.followingCount.toString() || ""}
+              label="following"
+            />
           </HStack>
         </HStack>
 
@@ -113,15 +127,61 @@ const ProfileBio = ({ text }: { text: string }) => {
 };
 
 const ProfileActions = () => {
+  const { id } = useLocalSearchParams();
+
+  const queryProfile = useQuery({
+    queryKey: ["profile", id],
+    queryFn: () => getProfile(id as string),
+  });
+
+  const data = queryProfile?.data?.data;
+  const isFollowing = data?.isFollowing;
+
+  const followMutation = useMutation({
+    mutationFn: () => followUser(id as string),
+    onSuccess: () => queryProfile.refetch(),
+    onError: (error) => console.log(error),
+  });
+
+  const unfollowMutation = useMutation({
+    mutationFn: () => unfollowUser(id as string),
+    onSuccess: () => queryProfile.refetch(),
+    onError: (error) => console.log(error),
+  });
+
+  const isLoading = followMutation.isPending || unfollowMutation.isPending;
+
+  const handleFollowToggle = () => {
+    if (isFollowing) {
+      unfollowMutation.mutate();
+    } else {
+      followMutation.mutate();
+    }
+  };
+
   return (
     <HStack space="sm" className="items-center justify-between w-full">
       <TouchableOpacity
+        disabled={isLoading}
+        onPress={handleFollowToggle}
         activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
-        className="flex-row items-center justify-center flex-1 gap-2 p-3 border border-gray-100 rounded-full"
+        className={`flex-row items-center justify-center flex-1 gap-2 p-3 rounded-full border 
+          ${
+            isFollowing
+              ? "bg-gray-100 border-gray-200"
+              : "bg-black border-black"
+          }
+        `}
       >
-        <Text className="text-lg font-SF_Medium">Following</Text>
-        <ChevronDown size={16} color={"black"} />
+        <Text
+          className={`text-lg font-SF_Medium ${
+            isFollowing ? "text-black" : "text-white"
+          }`}
+        >
+          {isLoading ? "Loading..." : isFollowing ? "Following" : "Follow"}
+        </Text>
       </TouchableOpacity>
+
       <TouchableOpacity
         activeOpacity={UIConstants.DEFAULT_ACTIVE_OPACITY}
         className="flex-row items-center justify-center flex-1 gap-2 p-3 border border-gray-100 rounded-full"
@@ -132,19 +192,9 @@ const ProfileActions = () => {
   );
 };
 
-const PostRow = ({ images }: { images: string[] }) => {
-  return (
-    <HStack space="sm" className="mb-2">
-      {images.map((image, index) => (
-        <PostImage key={index} uri={image} />
-      ))}
-    </HStack>
-  );
-};
-
 const PostImage = ({ uri }: { uri: string }) => {
   return (
-    <Box className="flex-1 bg-black h-[120px] rounded-lg">
+    <Box className="flex-1 bg-black h-[120px] aspect-square mx-1 rounded-lg">
       <Image
         source={{ uri }}
         cachePolicy={"memory-disk"}
@@ -160,34 +210,42 @@ const PostImage = ({ uri }: { uri: string }) => {
   );
 };
 
-const generatePostData = () => {
-  return Array.from({ length: 3 }).map((_, i) => ({
-    id: `row-${i}`,
-    images: [
-      `https://picsum.photos/300/300?random=${i * 3}`,
-      `https://picsum.photos/400/400?random=${i * 4 + 1}`,
-      `https://picsum.photos/500/500?random=${i * 3 + 2}`,
-    ],
-  }));
-};
-
 // Main Component
-const UserProfile = ({ hasHeader = true }: { hasHeader: boolean }) => {
-  const postData = generatePostData();
+const UserProfile = () => {
   const insets = useSafeAreaInsets();
+
+  const { id } = useLocalSearchParams();
+
+  const queryProfile = useQuery({
+    queryKey: ["profile", id],
+    queryFn: () => getProfile(id as string),
+  });
+
+  const userId =
+    queryProfile?.data?.data.id ?? "47d8c9ce-ead1-4855-b2d5-1f6823138715";
+  const queryPosts = useQuery({
+    queryKey: ["posts", "author", userId],
+    queryFn: () => getPostByAuthor(userId),
+  });
+  const posts = queryPosts.data?.data ?? [];
 
   return (
     <View style={styles.container}>
-      {hasHeader && <PageHeader title="Profile" />}
+      <PageHeader title="Profile" />
       <FlatList
-        data={postData}
+        data={posts}
         keyExtractor={(item) => item.id}
-        renderItem={({ item }) => <PostRow images={item.images} />}
+        renderItem={({ item }) => <PostImage uri={item.PostImage || ""} />}
+        numColumns={3}
         ListHeaderComponent={<ProfileHeader />}
         contentContainerStyle={[
           styles.contentContainer,
-          { paddingTop: hasHeader ? 56 + insets.top : insets.top }, // Add header height + top inset
+          { paddingTop: 56 + insets.top },
         ]}
+        columnWrapperStyle={{
+          marginBottom: 8,
+          marginHorizontal: -8,
+        }}
         showsVerticalScrollIndicator={false}
       />
     </View>

@@ -137,8 +137,8 @@ const CommentInput = () => {
   const query = useQueryClient();
 
   const queryProfile = useQuery({
-    queryKey: ["profile"],
-    queryFn: getProfile,
+    queryKey: ["profile", "mine"],
+    queryFn: () => getProfile(),
   });
 
   const profilePicture = queryProfile?.data?.data?.profile_picture;

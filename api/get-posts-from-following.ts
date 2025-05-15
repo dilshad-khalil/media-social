@@ -6,6 +6,6 @@ type Response = {
 };
 
 export default async function getPostsFromFollowing(): Promise<any> {
-  const response = await AxiosInstance.get<Response>("/post/from-following");
+  const response = await AxiosInstance.get<Response>("/post/all");
   return response.data;
 }
